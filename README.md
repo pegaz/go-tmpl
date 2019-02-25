@@ -1,5 +1,5 @@
 # go-tmpl
-Textual template generator written in Go
+### Textual template generator written in Go
 
 It enables to generate text files using templates (using text/template package) and CSV file as a source for a data.
 
