@@ -19,7 +19,8 @@ Standard use of this tool:
     
 Optionally you can create and use additional configuration files inside a main *workspace* directory (`-c` switch when using *generate* subcommand).
 
-**go-tmpl** uses configuration files in [TOML format](https://github.com/toml-lang/toml)
+**go-tmpl** uses configuration files in [TOML format](https://github.com/toml-lang/toml).
+
 Example of configuration file used by a **go-tmpl**:
 
     # CSV data filename, it should be placed in data directory inside of a given workspace
