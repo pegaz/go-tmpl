@@ -15,7 +15,7 @@
 package main
 
 import (
-	"gitlab.com/pawel.potrykus/go-tmpl/cmd"
+	"github.com/pegaz/go-tmpl/cmd"
 )
 
 func main() {
