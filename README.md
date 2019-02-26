@@ -1,7 +1,7 @@
 # go-tmpl
 ### Textual template generator written in Go
 
-It enables to generate text files using templates (using text/template package) and CSV file as a source for a data.
+It enables to generate text files with templates (using text/template package) and CSV file as a source for a data.
 
 **go-tmpl** uses [template engine](https://golang.org/pkg/text/template/) from a **golang** standard library.
 
@@ -17,11 +17,11 @@ Standard use of this tool:
 
     `$ go-tmpl generate -w workspace_name`
     
-Optionally you can create and use additional configuration files inside a main *workspace* directory (-c switch when using *generate* subcommand).
+Optionally you can create and use additional configuration files inside a main *workspace* directory (`-c` switch when using *generate* subcommand).
 
 **go-tmpl** uses configuration files in [TOML format](https://github.com/toml-lang/toml)
 Example of configuration file used by a **go-tmpl**:
-    
+
     # CSV data filename, it should be placed in data directory inside of a given workspace
     csv_data = "customer.csv"
     # delimiter used in CSV file as a field separator
@@ -31,9 +31,9 @@ Example of configuration file used by a **go-tmpl**:
     output_column_name = "hostname"
     output_in_single_file = false
     output_filename = "output.cfg"
-		
+
     [vars]
     # customer name
     customer = "ACME"
 
-[Table](https://github.com/toml-lang/toml#table) **[vars]** may be used to define global variables which then can be used by a templates.
+`[vars]` [section](https://github.com/toml-lang/toml#table) may be used to define global variables which then can be used by a templates.
