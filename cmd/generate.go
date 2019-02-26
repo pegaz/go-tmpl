@@ -20,7 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gitlab.com/pawel.potrykus/go-tmpl/templates"
+	"github.com/pegaz/go-tmpl/templates"
 )
 
 var workspace string
