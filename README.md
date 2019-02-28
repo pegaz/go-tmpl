@@ -1,4 +1,6 @@
 # go-tmpl
+[![Go Report Card](https://goreportcard.com/badge/github.com/pegaz/go-tmpl)](https://goreportcard.com/report/github.com/pegaz/go-tmpl) [![cover.run](https://cover.run/go/github.com/pegaz/go-tmpl.svg?style=flat&tag=golang-1.10)](https://cover.run/go?tag=golang-1.10&repo=github.com%2Fpegaz%2Fgo-tmpl)
+
 ### Textual template generator written in Go
 
 It enables to generate text files with templates (using text/template package) and CSV file as a source for a data.
