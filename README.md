@@ -1,7 +1,7 @@
 # go-tmpl
 [![Go Report Card](https://goreportcard.com/badge/github.com/pegaz/go-tmpl)](https://goreportcard.com/report/github.com/pegaz/go-tmpl) [![cover.run](https://cover.run/go/github.com/pegaz/go-tmpl.svg?style=flat&tag=golang-1.10)](https://cover.run/go?tag=golang-1.10&repo=github.com%2Fpegaz%2Fgo-tmpl)
 
-**go-tmpl** is a tool written in [Golang](https://golang.org) and enables to generate text files with templates (using text/template package) and CSV file as a source for a data.
+**go-tmpl** is a tool written in [Go](https://golang.org) created to generate textual output with templates (using [Go's](https://golang.org) standard library text/template package) and CSV file as a source for a data.
 
 **go-tmpl** uses [template engine](https://golang.org/pkg/text/template/) from a golang standard library.
 
@@ -11,7 +11,7 @@ To install `go-tmpl` run the following:
 
 `go get github.com/pegaz/go-tmpl`
 
-Then compile from within the project directory:
+Then compile it from within the project directory:
 
 `go build`
 
@@ -27,7 +27,7 @@ This command creates `workspace directory tree` with example configuration file 
 
 To generate output files for a given workspace use:
 
-`go generate -w <workspace_name> [-c <configuration_file>]`
+`go generate -n <workspace_name> [-c <configuration_file>]`
 
 If `-c <configuration_file>` parameter is omitted default configuration file `workspace.toml` will be used.
 
@@ -42,7 +42,7 @@ If `-c <configuration_file>` parameter is omitted default configuration file `wo
 4. Prepare templates and put them into a *template/* directory
 5. Generate output files with:
 
-    `$ go-tmpl generate -w workspace_name`
+    `$ go-tmpl generate -n workspace_name`
     
 Optionally you can create and use additional configuration files inside a main *workspace* directory (`-c` switch when using *generate* subcommand).
 
@@ -57,8 +57,6 @@ Example of configuration file used by a **go-tmpl**:
 
     template_column_name = "template_name"
     output_column_name = "hostname"
-    output_in_single_file = false
-    output_filename = "output.cfg"
 
     [vars]
     customer = "ACME"
@@ -73,8 +71,8 @@ Example of configuration file used by a **go-tmpl**:
 
 `output_column_name` = column name in CSV file where output filename can be found.
 
-`output_in_single_file` - set it to true if output should be stored in a single file rather than in multiple
-
-`output_filename` - output filename when `output_in_single_file` is set to `true`
-
 `[vars]` [section](https://github.com/toml-lang/toml#table) may be used to define global variables which then can be used by a templates.
+
+## Hints
+
+There is no need to use full filename of a `template file` in data file. The only relevant part of it is name _without_ file extension (in this case `.tpl`). On the other hand it is assumed that all filenames located in `templates/` directory should end with `.tpl`.
