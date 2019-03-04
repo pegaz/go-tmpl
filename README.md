@@ -17,7 +17,7 @@ Standard use of this tool:
 4. Prepare templates and put them into a *template/* directory
 5. Generate output files with:
 
-    `$ go-tmpl generate -w workspace_name`
+    `$ go-tmpl generate -n workspace_name`
     
 Optionally you can create and use additional configuration files inside a main *workspace* directory (`-c` switch when using *generate* subcommand).
 
@@ -32,8 +32,6 @@ Example of configuration file used by a **go-tmpl**:
 
     template_column_name = "template_name"
     output_column_name = "hostname"
-    output_in_single_file = false
-    output_filename = "output.cfg"
 
     [vars]
     # customer name
