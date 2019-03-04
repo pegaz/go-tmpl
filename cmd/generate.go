@@ -16,85 +16,108 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/pegaz/go-tmpl/templates"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/pegaz/go-tmpl/templates"
 )
 
-var workspace string
-var outputFilename string
-
-//workspaceConfig is a config file name and it resides inside a root directory of a specific workspace
-var workspaceConfig string
+var (
+	workspaceName      string
+	workspaceConfig    string
+	outputColumnName   string
+	templateColumnName string
+	csvFile            string
+	csvDelimiter       rune
+)
 
 // generateCmd represents the generate command
 var generateCmd = &cobra.Command{
 	Use:   "generate",
 	Short: "Generate output from templates",
 
+	SilenceUsage: true,
+
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := initConfig()
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(2)
+			return err
 		}
-
-		csvDelimiter := rune(viper.GetString("csv_delimiter")[0])
-		csvFile := workspace + directories["data"] + "/" + viper.GetString("csv_data")
 
 		data, err := templates.ReadCSV(csvFile, csvDelimiter)
 		if err != nil {
 			return err
 		}
 
-		var outputs []*templates.Template
-		for _, d := range data {
-			var filename string
-			var singleFileOutput bool
+		// Global variables (defined in configuration file within a [vars] section
+		vars := viper.Sub("vars")
+		varsName := vars.AllKeys()
+		globalVars := make(map[string]string)
+		for _, name := range varsName {
+			globalVars[name] = vars.GetString(name)
+		}
 
-			templateFilename, ok := d[viper.GetString("template_column_name")]
+		// Delete content of the output's directory
+		err = pruneDirContent(workspaceName + directories["output"])
+		if err != nil {
+			return err
+		}
+
+		for _, d := range data {
+			var outputFile io.WriteCloser
+
+			templateFilename, ok := d[templateColumnName]
 			if !ok {
-				return fmt.Errorf("couldn't find '%s' column in data provided", viper.GetString("template_column_name"))
+				return fmt.Errorf("couldn't find '%s' column in data provided", templateColumnName)
 			}
 
-			templatePath := workspace + directories["templates"] + "/" + templateFilename
+			templatePath := workspaceName + directories["templates"] + "/" + templateFilename
+			if templatePath[len(templatePath)-4:] != ".tpl" {
+				templatePath = templatePath + ".tpl"
+			}
+			templateFile, err := os.Open(templatePath)
+			if err != nil {
+				return err
+			}
+			defer templateFile.Close()
 
 			var tmpl *templates.Template
 
-			if outputFilename == "" {
-				filename = d[viper.GetString("output_column_name")]
-			} else {
-				filename = outputFilename
-				singleFileOutput = true
-			}
-
-			tmpl, err = templates.New(d, templatePath, workspace+directories["output"]+"/", filename, singleFileOutput)
+			tmpl, err = templates.New(d, templateFilename, templateFile)
 			if err != nil {
 				return err
 			}
 
 			// Global variables defined in configuration file for a workspace goes to Template
-			vars := viper.Sub("vars")
-			varsName := vars.AllKeys()
-			m := make(map[string]string)
+			tmpl.SetGlobalVars(globalVars)
 
-			for _, name := range varsName {
-				m[name] = vars.GetString(name)
+			if d[outputColumnName] != "" {
+				outputFile, err = os.OpenFile(workspaceName+directories["output"]+"/"+d[outputColumnName]+".txt", os.O_CREATE|os.O_APPEND, 0644)
+				if err != nil {
+					return err
+				}
+				defer outputFile.Close()
+			} else {
+				fmt.Println("Couldn't determine output filename for entry")
+				outputFile = os.Stdout
 			}
-			tmpl.SetGlobalVars(m)
 
-			outputs = append(outputs, tmpl)
-
+			err = tmpl.Execute(outputFile)
+			if err != nil {
+				fmt.Printf("error generating file from template: %s", err)
+			}
 		}
 
-		return templates.Execute(outputs)
+		return nil
 	},
 }
 
 func init() {
-	generateCmd.Flags().StringVarP(&workspace, "workspace", "w", "", "workspace to generate files for")
+	generateCmd.Flags().StringVarP(&workspaceName, "name", "n", "", "workspace to generate files for")
 	generateCmd.MarkFlagRequired("workspace")
 
 	generateCmd.Flags().StringVarP(&workspaceConfig, "config", "c", "workspace.toml", "configuration file to use generator for")
@@ -108,7 +131,7 @@ func initConfig() error {
 
 	viper.SetConfigType("toml")
 
-	file, err = os.Open(workspace + "/" + workspaceConfig)
+	file, err = os.Open(workspaceName + "/" + workspaceConfig)
 	if err != nil {
 		return err
 	}
@@ -121,31 +144,32 @@ func initConfig() error {
 	if viper.IsSet("csv_data") == false ||
 		viper.IsSet("csv_delimiter") == false ||
 		viper.IsSet("template_column_name") == false ||
-		viper.IsSet("output_column_name") == false ||
-		viper.IsSet("output_in_single_file") == false ||
-		viper.IsSet("output_filename") == false {
+		viper.IsSet("output_column_name") == false {
 		return fmt.Errorf("some configuration parametrs in config file are missing")
 	}
 
-	if viper.GetBool("output_in_single_file") != false {
-		outputFilename = viper.GetString("output_filename")
-	}
+	outputColumnName = viper.GetString("output_column_name")
+	templateColumnName = viper.GetString("template_column_name")
+	csvDelimiter = rune(viper.GetString("csv_delimiter")[0])
+	csvFile = workspaceName + directories["data"] + "/" + viper.GetString("csv_data")
 
 	return err
 }
 
-// func openFile(path string, output string) (*os.File, error) {
-// 	var file *os.File
+func pruneDirContent(dir string) error {
+	matches, err := filepath.Glob(dir + "/*")
+	if err != nil {
+		return err
+	}
 
-// 	switch output {
-// 	case "stdout":
-// 		file = os.Stdout
-// 	default:
-// 		_, err := os.Stat(path + output)
-// 		if err == nil {
-// 			os.Remove(path + output)
-// 		}
-// 		return os.OpenFile(path+output, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-// 	}
-// 	return file, nil
-// }
+	for _, filename := range matches {
+		if strings.HasSuffix(filename, ".txt") || strings.HasSuffix(filename, ".cfg") {
+			err = os.Remove(filename)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}

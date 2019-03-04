@@ -15,27 +15,26 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-const VERSION = "0.001"
+// version stands for application's current version number
+const version = "0.21"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "go-tmpl",
-	Short: "A brief description of your application",
+	Short: "Textual file generator",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	rootCmd.Version = VERSION
+	rootCmd.Version = version
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		os.Exit(2)
 	}
 }
