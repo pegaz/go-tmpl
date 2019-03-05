@@ -1,12 +1,15 @@
 package templates
 
 import (
+	"bytes"
 	"encoding/csv"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
 	"text/template"
+	"unicode/utf8"
 )
 
 // Template stores exactly one row and related to it template of a data read from CSV file
@@ -85,7 +88,6 @@ func (t *Template) Execute(w io.Writer) error {
 // ReadCSV reads CSV file and returns data arranged in slice of maps
 func ReadCSV(filename string, comma rune) ([]map[string]string, error) {
 	m := make([]map[string]string, 0)
-	headers := make([]string, 0)
 
 	f, err := os.Open(filename)
 	if err != nil {
@@ -93,33 +95,38 @@ func ReadCSV(filename string, comma rune) ([]map[string]string, error) {
 	}
 	defer f.Close()
 
-	reader := csv.NewReader(f)
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
 
+	if !isUTF8(b) {
+		return nil, fmt.Errorf("csv data file is not encoded in utf-8 or ascii")
+	}
+
+	b = normUTF8(b)
+
+	reader := csv.NewReader(bytes.NewReader(b))
 	reader.Comma = comma
 
-	var i int
-	for {
-		line, err := reader.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
+	csvContent, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
 
+	// when we have a header separated...
+	header := make([]string, 0)
+	header = append(header, csvContent[0]...)
+
+	// ...we need to omit it
+	csvContent = csvContent[1:]
+
+	for _, line := range csvContent {
 		record := make(map[string]string)
 
-		for j, elem := range line {
-			if i == 0 {
-				headers = append(headers, elem)
-			} else {
-				record[headers[j]] = elem
-			}
-		}
-
-		if i == 0 {
-			i++
-			continue
+		for j, field := range line {
+			colName := header[j]
+			record[colName] = field
 		}
 
 		m = append(m, record)
@@ -129,60 +136,16 @@ func ReadCSV(filename string, comma rune) ([]map[string]string, error) {
 	return m, nil
 }
 
-// func Execute(tmpls []*Template) error {
-// 	templateNames := make(map[string]*template.Template)
+// isUTF8 checks if given byte's slice is correctly encoded with UTF-8
+func isUTF8(b []byte) bool {
+	return utf8.Valid(b)
+}
 
-// 	var err error
-// 	var errCount int
-// 	for _, t := range tmpls {
-// 		if _, ok := templateNames[t.TemplateName]; !ok {
-// 			var templateFile *os.File
-// 			var templateContentBytes []byte
-// 			var templateContent string
+// normUTF8 checks if given byte's slice begins with BOM (Byte Order Mark) and if so, truncates it and returns plain UTF-8
+func normUTF8(b []byte) []byte {
+	if bytes.Compare(b[:3], []byte{0xef, 0xbb, 0xbf}) == 0 {
+		return b[3:]
+	}
 
-// 			templateFile, err = os.Open(t.TemplateName)
-// 			if err != nil {
-// 				fmt.Printf("!!! %s\n", err)
-// 				errCount++
-// 				continue
-// 			}
-// 			defer templateFile.Close()
-
-// 			templateContentBytes, err = ioutil.ReadAll(templateFile)
-// 			if err != nil {
-// 				fmt.Printf("!!! %s\n", err)
-// 				errCount++
-// 				continue
-// 			}
-
-// 			templateContent = string(templateContentBytes)
-// 			templateNames[t.TemplateName], err = template.New(t.TemplateName).Funcs(templateFuncs).Parse(templateContent)
-// 			if err != nil {
-// 				fmt.Printf("!!! %s\n", err)
-// 				errCount++
-// 				continue
-// 			}
-
-// 			flags := os.O_WRONLY | os.O_CREATE
-
-// 			err = templateNames[t.TemplateName].Execute(file, t.Data)
-// 			if err != nil {
-// 				fmt.Printf("!!! %s\n", err)
-// 				errCount++
-// 				continue
-// 			}
-
-// 			if _, ok := t.Data["hostname"]; ok {
-// 				fmt.Printf(">>> generated output for %s using %s\n", t.OutputFileName, t.TemplateName)
-// 			} else {
-// 				fmt.Printf(">>> generated output using %s\n", t.TemplateName)
-// 			}
-// 		}
-// 	}
-
-// 	if errCount > 0 {
-// 		return fmt.Errorf("there had been an error(s) while generating output")
-// 	}
-
-// 	return nil
-// }
+	return b
+}
