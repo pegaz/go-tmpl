@@ -46,7 +46,7 @@ func New(data map[string]string, templateName string, templateReader io.Reader) 
 	}
 
 	if !isUTF8(b) {
-		return nil, fmt.Errorf("csv data file is not encoded in utf-8 or ascii")
+		return nil, fmt.Errorf("template file is not encoded in utf-8 or ascii")
 	}
 
 	b = normUTF8(b)
