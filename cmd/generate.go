@@ -72,7 +72,13 @@ var generateCmd = &cobra.Command{
 
 			templateFilename, ok := d[templateColumnName]
 			if !ok {
-				return fmt.Errorf("couldn't find '%s' column in data provided", templateColumnName)
+				fmt.Printf("couldn't find '%s' column in data provided", templateColumnName)
+				continue
+			}
+			outputFilename, ok := d[outputColumnName]
+			if !ok {
+				fmt.Printf("couldn't find '%s' column in data provided", outputColumnName)
+				continue
 			}
 
 			templatePath := workspaceName + directories["templates"] + "/" + templateFilename
@@ -95,16 +101,11 @@ var generateCmd = &cobra.Command{
 			// Global variables defined in configuration file for a workspace goes to Template
 			tmpl.SetGlobalVars(globalVars)
 
-			if d[outputColumnName] != "" {
-				outputFile, err = os.OpenFile(workspaceName+directories["output"]+"/"+d[outputColumnName]+".txt", os.O_CREATE|os.O_APPEND, 0644)
-				if err != nil {
-					return err
-				}
-				defer outputFile.Close()
-			} else {
-				fmt.Println("Couldn't determine output filename for entry")
-				outputFile = os.Stdout
+			outputFile, err = os.OpenFile(workspaceName+directories["output"]+"/"+outputFilename+".txt", os.O_CREATE|os.O_APPEND, 0644)
+			if err != nil {
+				return err
 			}
+			defer outputFile.Close()
 
 			err = tmpl.Execute(outputFile)
 			if err != nil {
