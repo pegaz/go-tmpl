@@ -1,9 +1,9 @@
 # go-tmpl
 [![Go Report Card](https://goreportcard.com/badge/github.com/pegaz/go-tmpl)](https://goreportcard.com/report/github.com/pegaz/go-tmpl) [![cover.run](https://cover.run/go/github.com/pegaz/go-tmpl.svg?style=flat&tag=golang-1.10)](https://cover.run/go?tag=golang-1.10&repo=github.com%2Fpegaz%2Fgo-tmpl)
 
-**go-tmpl** is a tool written in [Go](https://golang.org) created to generate textual output with templates (using [Go's](https://golang.org) standard library text/template package) and CSV file as a source for a data.
+**go-tmpl** is a tool written in [Go](https://golang.org) created to generate textual output with templates and CSV file as a source for a data.
 
-**go-tmpl** uses [template engine](https://golang.org/pkg/text/template/) from a golang standard library.
+**go-tmpl** uses [template engine](https://golang.org/pkg/text/template/) from a golang's standard library.
 
 ## Installation
 
@@ -11,11 +11,11 @@ To install `go-tmpl` run the following:
 
 `go get github.com/pegaz/go-tmpl`
 
-Then compile it from within the project directory:
+Then compile it from within the project's directory:
 
 `go build`
 
-## Using of a tool
+## Usage
 
 To create new _workspace_ in current directory one may use:
 `go init workspace -n <workspace_name>`
