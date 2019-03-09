@@ -15,15 +15,12 @@
 package templates
 
 import (
-	"bytes"
-	"encoding/csv"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
 	"text/template"
-	"unicode/utf8"
 )
 
 // Template stores exactly one row and related to it template of a data read from CSV file
@@ -104,69 +101,4 @@ func (t *Template) Execute(w io.Writer) error {
 	}
 
 	return tt.Execute(w, t.Data)
-}
-
-// ReadCSV reads CSV file and returns data arranged in slice of maps
-func ReadCSV(filename string, comma rune) ([]map[string]string, error) {
-	m := make([]map[string]string, 0)
-
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	b, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-
-	if !isUTF8(b) {
-		return nil, fmt.Errorf("csv data file is not encoded in utf-8 or ascii")
-	}
-
-	b = normUTF8(b)
-
-	reader := csv.NewReader(bytes.NewReader(b))
-	reader.Comma = comma
-
-	csvContent, err := reader.ReadAll()
-	if err != nil {
-		return nil, err
-	}
-
-	// when we have a header separated...
-	header := make([]string, 0)
-	header = append(header, csvContent[0]...)
-
-	// ...we need to omit it
-	csvContent = csvContent[1:]
-
-	for _, line := range csvContent {
-		record := make(map[string]string)
-
-		for j, field := range line {
-			colName := header[j]
-			record[colName] = field
-		}
-
-		m = append(m, record)
-
-	}
-
-	return m, nil
-}
-
-// isUTF8 checks if given byte's slice is correctly encoded with UTF-8
-func isUTF8(b []byte) bool {
-	return utf8.Valid(b)
-}
-
-// normUTF8 checks if given byte's slice begins with BOM (Byte Order Mark) and if so, truncates it and returns plain UTF-8
-func normUTF8(b []byte) []byte {
-	if bytes.Compare(b[:3], []byte{0xef, 0xbb, 0xbf}) == 0 {
-		return b[3:]
-	}
-
-	return b
 }
