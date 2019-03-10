@@ -58,16 +58,15 @@ func createWorkspace(name string) error {
 
 	files := map[string][]byte{
 		name + "/workspace.toml": []byte(`# CSV data filename, it should be placed in data directory inside of a given workspace
-csv_data = "data.csv"
+#csv_data = "data.csv"
 # delimiter used in CSV file as a field separator
-csv_delimiter = ","
+#csv_delimiter = ","
 
 template_column_name = "router"
 output_column_name = "hostname"
 
 [vars]
-# customer name
-customer = "ACME"
+# custom vars to use them inside of templates should be placed here
 `),
 		name + "/README.md": []byte(`## Root of a workspace, workspace.toml configurations file should be placed here
 		`),

@@ -31,7 +31,7 @@ var (
 	workspaceConfig    string
 	outputColumnName   string
 	templateColumnName string
-	csvFile            string
+	csvFilename        string
 	csvDelimiter       rune
 )
 
@@ -48,7 +48,13 @@ var generateCmd = &cobra.Command{
 			return err
 		}
 
-		data, err := templates.ReadCSV(csvFile, csvDelimiter)
+		f, err := os.Open(csvFilename)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		data, err := templates.ReadCSV(f, csvDelimiter)
 		if err != nil {
 			return err
 		}
@@ -142,17 +148,24 @@ func initConfig() error {
 		return err
 	}
 
-	if viper.IsSet("csv_data") == false ||
-		viper.IsSet("csv_delimiter") == false ||
-		viper.IsSet("template_column_name") == false ||
+	// some defaults
+	if viper.IsSet("csv_data") == false {
+		viper.Set("csv_data", "data.csv")
+	}
+	if viper.IsSet("csv_delimiter") == false {
+		viper.Set("csv_delimiter", ',')
+	}
+
+	// mandatory fields
+	if viper.IsSet("template_column_name") == false ||
 		viper.IsSet("output_column_name") == false {
-		return fmt.Errorf("some configuration parametrs in config file are missing")
+		return fmt.Errorf("some mandatory configuration parametrs in config file are missing")
 	}
 
 	outputColumnName = viper.GetString("output_column_name")
 	templateColumnName = viper.GetString("template_column_name")
 	csvDelimiter = rune(viper.GetString("csv_delimiter")[0])
-	csvFile = workspaceName + directories["data"] + "/" + viper.GetString("csv_data")
+	csvFilename = workspaceName + directories["data"] + "/" + viper.GetString("csv_data")
 
 	return err
 }

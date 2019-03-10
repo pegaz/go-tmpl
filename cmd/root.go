@@ -21,7 +21,7 @@ import (
 )
 
 // version stands for application's current version number
-const version = "0.21"
+const version = "0.22"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{

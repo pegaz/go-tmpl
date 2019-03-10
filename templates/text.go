@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"os"
 	"strings"
 	"unicode/utf8"
 )
@@ -63,17 +63,11 @@ func Normalize(s string) string {
 	return nstr.String()
 }
 
-// ReadCSV reads CSV file and returns data arranged in slice of maps
-func ReadCSV(filename string, comma rune) ([]map[string]string, error) {
+// ReadCSV reads from r and returns data arranged in slice of maps
+func ReadCSV(r io.Reader, comma rune) ([]map[string]string, error) {
 	m := make([]map[string]string, 0)
 
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	b, err := ioutil.ReadAll(f)
+	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
