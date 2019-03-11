@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package templates
+package text
 
 import (
 	"fmt"
@@ -28,10 +28,11 @@ type Template struct {
 	Data            map[string]string
 	TemplateName    string
 	TemplateContent string
+	missing         string
 }
 
-// New creates and returns pointer to the Template
-func New(data map[string]string, templateName string, templateReader io.Reader) (*Template, error) {
+// NewTemplate creates and returns pointer to the Template
+func NewTemplate(data map[string]string, templateName string, templateReader io.Reader) (*Template, error) {
 	t := &Template{}
 
 	t.Data = data
@@ -49,6 +50,7 @@ func New(data map[string]string, templateName string, templateReader io.Reader) 
 	b = normUTF8(b)
 
 	t.TemplateContent = string(b)
+	t.missing = "invalid"
 
 	return t, nil
 }
@@ -93,9 +95,21 @@ func Printt(tplContent string, tplData map[string]string) {
 	Fprintt(os.Stdout, tplContent, tplData)
 }
 
+// SetStrict sets behaviour of a template engine when key of the map passed in template is not defined
+func (t *Template) SetStrict(s string) {
+	switch s {
+	case "zero":
+		t.missing = "zero"
+	case "error":
+		t.missing = "error"
+	default:
+		t.missing = "invalid"
+	}
+}
+
 // Execute executes template and outputs to 'w'
 func (t *Template) Execute(w io.Writer) error {
-	tt, err := template.New(t.TemplateName).Funcs(templateFuncs).Parse(t.TemplateContent)
+	tt, err := template.New(t.TemplateName).Option("missingkey=" + t.missing).Funcs(templateFuncs).Parse(t.TemplateContent)
 	if err != nil {
 		return err
 	}

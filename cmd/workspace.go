@@ -61,6 +61,11 @@ func createWorkspace(name string) error {
 #csv_data = "data.csv"
 # delimiter used in CSV file as a field separator
 #csv_delimiter = ","
+# how to behave when no key is found in CSV file
+# zero - nothing will be print in place of variable
+# error - error will be returned when no value will be found
+# invalid - '<no value>' will be print in place of variable
+#missing_key = "invalid"
 
 template_column_name = "router"
 output_column_name = "hostname"

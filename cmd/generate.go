@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pegaz/go-tmpl/templates"
+	"github.com/pegaz/go-tmpl/text"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -33,6 +33,7 @@ var (
 	templateColumnName string
 	csvFilename        string
 	csvDelimiter       rune
+	missingKey         string
 )
 
 // generateCmd represents the generate command
@@ -43,18 +44,21 @@ var generateCmd = &cobra.Command{
 	SilenceUsage: true,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// set some default config parameters
+		setDefaults()
+
 		err := initConfig()
 		if err != nil {
 			return err
 		}
 
-		f, err := os.Open(csvFilename)
+		csvReader, err := os.Open(csvFilename)
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer csvReader.Close()
 
-		data, err := templates.ReadCSV(f, csvDelimiter)
+		data, err := text.ReadCSV(csvReader, csvDelimiter)
 		if err != nil {
 			return err
 		}
@@ -91,21 +95,22 @@ var generateCmd = &cobra.Command{
 			if templatePath[len(templatePath)-4:] != ".tpl" {
 				templatePath = templatePath + ".tpl"
 			}
-			templateFile, err := os.Open(templatePath)
+			templateReader, err := os.Open(templatePath)
 			if err != nil {
 				return err
 			}
-			defer templateFile.Close()
+			defer templateReader.Close()
 
-			var tmpl *templates.Template
+			var tmpl *text.Template
 
-			tmpl, err = templates.New(d, templateFilename, templateFile)
+			tmpl, err = text.NewTemplate(d, templateFilename, templateReader)
 			if err != nil {
 				return err
 			}
 
 			// Global variables defined in configuration file for a workspace goes to Template
 			tmpl.SetGlobalVars(globalVars)
+			tmpl.SetStrict(missingKey)
 
 			outputFile, err = os.OpenFile(workspaceName+directories["output"]+"/"+outputFilename+".txt", os.O_CREATE|os.O_APPEND, 0644)
 			if err != nil {
@@ -132,6 +137,12 @@ func init() {
 	rootCmd.AddCommand(generateCmd)
 }
 
+func setDefaults() {
+	viper.SetDefault("csv_data", "data.csv")
+	viper.SetDefault("csv_delimiter", ',')
+	viper.SetDefault("missingkey", "invalid")
+}
+
 func initConfig() error {
 	var err error
 	var file *os.File
@@ -148,14 +159,6 @@ func initConfig() error {
 		return err
 	}
 
-	// some defaults
-	if viper.IsSet("csv_data") == false {
-		viper.Set("csv_data", "data.csv")
-	}
-	if viper.IsSet("csv_delimiter") == false {
-		viper.Set("csv_delimiter", ',')
-	}
-
 	// mandatory fields
 	if viper.IsSet("template_column_name") == false ||
 		viper.IsSet("output_column_name") == false {
@@ -165,6 +168,11 @@ func initConfig() error {
 	outputColumnName = viper.GetString("output_column_name")
 	templateColumnName = viper.GetString("template_column_name")
 	csvDelimiter = rune(viper.GetString("csv_delimiter")[0])
+	if viper.GetString("missing_key") == "invalid" || viper.GetString("missing_key") == "zero" || viper.GetString("missing_key") == "error" {
+		missingKey = viper.GetString("missing_key")
+	} else if viper.IsSet("missing_key") {
+		return fmt.Errorf("invalid value for 'missing_key' value in configuration file, got: %s", viper.GetString("missing_key"))
+	}
 	csvFilename = workspaceName + directories["data"] + "/" + viper.GetString("csv_data")
 
 	return err
