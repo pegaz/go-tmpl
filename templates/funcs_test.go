@@ -29,7 +29,7 @@ func TestIP4(t *testing.T) {
 	}
 
 	for _, tc := range ip4TestCases {
-		result, err := ip4(tc.ip, tc.idx)
+		result, err := IP4(tc.ip, tc.idx)
 		if err != nil {
 			t.Error(err)
 		}
@@ -41,7 +41,7 @@ func TestIP4(t *testing.T) {
 }
 
 func TestIP4Mask(t *testing.T) {
-	var ip4MaskTescCases = []struct {
+	var IP4MaskTestCases = []struct {
 		ip       string
 		expected string
 	}{
@@ -50,8 +50,8 @@ func TestIP4Mask(t *testing.T) {
 		{"10.0.0.0/26", "255.255.255.192"},
 	}
 
-	for _, tc := range ip4MaskTescCases {
-		result, err := ip4mask(tc.ip)
+	for _, tc := range IP4MaskTestCases {
+		result, err := IP4Mask(tc.ip)
 		if err != nil {
 			t.Error(err)
 		}
@@ -75,9 +75,76 @@ func TestSplit(t *testing.T) {
 	}
 
 	for _, tc := range splitTestCases {
-		result := split(tc.str, tc.sep, tc.idx)
+		result := Split(tc.str, tc.sep, tc.idx)
 		if result != tc.expected {
 			t.Errorf("expected to get '%s', instead got '%s'\n", tc.expected, result)
+		}
+	}
+}
+
+func TestIP4Cidr(t *testing.T) {
+	var testCases = []struct {
+		ip       string
+		expected string
+	}{
+		{"192.168.0.0/24", "24"},
+		{"10.0.0.0/8", "8"},
+		{"10.0.1.0/29", "29"},
+		{"10.0.2.0/32", "32"},
+	}
+
+	for _, tc := range testCases {
+		cidr, err := IP4Cidr(tc.ip)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if cidr != tc.expected {
+			t.Errorf("expected to get CIDR %s, instead got %s", tc.expected, cidr)
+		}
+	}
+}
+
+func TestIP4CidrToMask(t *testing.T) {
+	var testCases = []struct {
+		cidr     string
+		expected string
+	}{
+		{"24", "255.255.255.0"},
+		{"28", "255.255.255.240"},
+		{"32", "255.255.255.255"},
+	}
+
+	for _, tc := range testCases {
+		mask, err := IP4CidrToMask(tc.cidr)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if mask != tc.expected {
+			t.Errorf("expected to get mask %s, instead got %s", tc.expected, mask)
+		}
+	}
+}
+
+func TestIP4MaskToCidr(t *testing.T) {
+	var testCases = []struct {
+		mask     string
+		expected string
+	}{
+		{"255.255.255.0", "24"},
+		{"255.255.255.240", "28"},
+		{"255.255.255.255", "32"},
+	}
+
+	for _, tc := range testCases {
+		cidr, err := IP4MaskToCidr(tc.mask)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if cidr != tc.expected {
+			t.Errorf("expected to get CIDR %s, instead got %s", tc.expected, cidr)
 		}
 	}
 }

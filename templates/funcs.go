@@ -16,19 +16,24 @@ package templates
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/dspinhirne/netaddr-go"
 )
 
 var templateFuncs = map[string]interface{}{
-	"split":   split,
-	"ip4":     ip4,
-	"ip4mask": ip4mask,
-	//"ip6":      ip6,
+	"split":           Split,
+	"ip4":             IP4,
+	"ip4mask":         IP4Mask,
+	"ip4cidr":         IP4Cidr,
+	"ip4mask_to_cidr": IP4MaskToCidr,
+	"ip4cidr_to_mask": IP4CidrToMask,
+	//"ip6":      IP6,
+	//"ip6mask": IP6Mask,
 }
 
-func ip4(ip string, idx int) (string, error) {
+func IP4(ip string, idx int) (string, error) {
 	if idx < 0 {
 		return "", fmt.Errorf("negative value of argument passed to ip4 func not allowed")
 	}
@@ -47,7 +52,7 @@ func ip4(ip string, idx int) (string, error) {
 	return ipv4.String(), nil
 }
 
-func ip4mask(ip string) (string, error) {
+func IP4Mask(ip string) (string, error) {
 	ipv4net, err := netaddr.ParseIPv4Net(ip)
 	if err != nil {
 		return "", err
@@ -56,7 +61,43 @@ func ip4mask(ip string) (string, error) {
 	return ipv4net.Netmask().Extended(), nil
 }
 
-func split(str string, sep string, idx int) string {
+func IP4Cidr(ip string) (string, error) {
+	ipv4net, err := netaddr.ParseIPv4Net(ip)
+	if err != nil {
+		return "", err
+	}
+
+	cidr := strconv.Itoa(int(ipv4net.Netmask().PrefixLen()))
+
+	return cidr, nil
+}
+
+func IP4MaskToCidr(mask string) (string, error) {
+	mask32, err := netaddr.ParseMask32(mask)
+	if err != nil {
+		return "", err
+	}
+
+	cidr := strconv.Itoa(int(mask32.PrefixLen()))
+
+	return cidr, nil
+}
+
+func IP4CidrToMask(cidr string) (string, error) {
+	cidrInt, err := strconv.Atoi(cidr)
+	if err != nil {
+		return "", err
+	}
+
+	mask32, err := netaddr.NewMask32(uint(cidrInt))
+	if err != nil {
+		return "", err
+	}
+
+	return mask32.Extended(), nil
+}
+
+func Split(str string, sep string, idx int) string {
 	arr := strings.Split(str, sep)
 	if idx > len(arr)-1 {
 		return ""
