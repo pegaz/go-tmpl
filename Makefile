@@ -1,4 +1,4 @@
-OUT := gotmpl
+OUT := go-tmpl
 PKG := github.com/pegaz/go-tmpl
 VERSION := $(shell git describe --always --tag --long --dirty)
 PKG_LIST := $(shell go list ${PKG}/...)
