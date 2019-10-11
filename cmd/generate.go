@@ -26,6 +26,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	DefaultCsvDelimiter = ','
+	DefaultCsvDataFile  = "data.csv"
+)
+
 var (
 	workspaceName      string
 	workspaceConfig    string
@@ -34,6 +39,10 @@ var (
 	csvFilename        string
 	csvDelimiter       rune
 	missingKey         string
+	overrideOutput     bool
+
+	fileCounter int64
+	outputFiles []string
 )
 
 // generateCmd represents the generate command
@@ -71,10 +80,12 @@ var generateCmd = &cobra.Command{
 			globalVars[name] = vars.GetString(name)
 		}
 
-		// Delete content of the output's directory
-		err = pruneDirContent(workspaceName + directories["output"])
-		if err != nil {
-			return err
+		if overrideOutput == true {
+			// Delete content of the output's directory
+			err = pruneDirContent(rootDir + "/" + workspaceName + directories["output"])
+			if err != nil {
+				return err
+			}
 		}
 
 		for _, d := range data {
@@ -91,7 +102,7 @@ var generateCmd = &cobra.Command{
 				continue
 			}
 
-			templatePath := workspaceName + directories["templates"] + "/" + templateFilename
+			templatePath := rootDir + "/" + workspaceName + directories["templates"] + "/" + templateFilename
 			if templatePath[len(templatePath)-4:] != ".tpl" {
 				templatePath = templatePath + ".tpl"
 			}
@@ -112,7 +123,21 @@ var generateCmd = &cobra.Command{
 			tmpl.SetGlobalVars(globalVars)
 			tmpl.SetStrict(missingKey)
 
-			outputFile, err = os.OpenFile(workspaceName+directories["output"]+"/"+outputFilename+".txt", os.O_CREATE|os.O_APPEND, 0644)
+			var flags int
+			if contains(outputFiles, outputFilename) {
+				flags = os.O_APPEND
+			} else {
+				// Check if given file already exist and if so don't generate output for it
+				_, err = os.Stat(rootDir + "/" + workspaceName + directories["output"] + "/" + outputFilename + ".txt")
+				if err == nil {
+					continue
+				}
+
+				flags = os.O_CREATE
+				outputFiles = append(outputFiles, outputFilename)
+			}
+
+			outputFile, err = os.OpenFile(rootDir+"/"+workspaceName+directories["output"]+"/"+outputFilename+".txt", flags, 0644)
 			if err != nil {
 				return err
 			}
@@ -121,14 +146,35 @@ var generateCmd = &cobra.Command{
 			err = tmpl.Execute(outputFile)
 			if err != nil {
 				fmt.Printf("error generating file from template: %s", err)
+				return err
 			}
+		}
+
+		if len(outputFiles) > 0 {
+			for _, outputFile := range outputFiles {
+				fmt.Printf("* %s\n", outputFile)
+			}
+			fmt.Println()
+			fmt.Printf("Succesfully generated %d output files", len(outputFiles))
+		} else {
+			fmt.Print("Nothing to do")
 		}
 
 		return nil
 	},
 }
 
+func contains(arr []string, str string) bool {
+	for _, a := range arr {
+		if a == str {
+			return true
+		}
+	}
+	return false
+}
+
 func init() {
+	generateCmd.Flags().BoolVarP(&overrideOutput, "force", "f", false, "override the content of output directory")
 	generateCmd.Flags().StringVarP(&workspaceName, "name", "n", "", "workspace to generate files for")
 	generateCmd.MarkFlagRequired("workspace")
 
@@ -138,9 +184,10 @@ func init() {
 }
 
 func setDefaults() {
-	viper.SetDefault("csv_data", "data.csv")
-	viper.SetDefault("csv_delimiter", ',')
+	viper.SetDefault("csv_data", DefaultCsvDataFile)
+	viper.SetDefault("csv_delimiter", DefaultCsvDelimiter)
 	viper.SetDefault("missingkey", "invalid")
+	viper.SetDefault("override_output", "false")
 }
 
 func initConfig() error {
@@ -149,7 +196,7 @@ func initConfig() error {
 
 	viper.SetConfigType("toml")
 
-	file, err = os.Open(workspaceName + "/" + workspaceConfig)
+	file, err = os.Open(rootDir + "/" + workspaceName + "/" + workspaceConfig)
 	if err != nil {
 		return err
 	}
@@ -173,7 +220,7 @@ func initConfig() error {
 	} else if viper.IsSet("missing_key") {
 		return fmt.Errorf("invalid value for 'missing_key' value in configuration file, got: %s", viper.GetString("missing_key"))
 	}
-	csvFilename = workspaceName + directories["data"] + "/" + viper.GetString("csv_data")
+	csvFilename = rootDir + "/" + workspaceName + directories["data"] + "/" + viper.GetString("csv_data")
 
 	return err
 }

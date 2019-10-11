@@ -22,11 +22,16 @@ import (
 
 // version stands for application's current version number
 var version = "undefined"
+var rootDir = ""
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "go-tmpl",
 	Short: "Textual file generator",
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringVarP(&rootDir, "root", "r", "c:\\templates\\", "root directory")
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
